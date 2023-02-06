@@ -86,6 +86,13 @@ public class SwiftFlutterWebAuthPlugin: NSObject, FlutterPlugin {
         } else if (call.method == "cleanUpDanglingCalls") {
             // we do not keep track of old callbacks on iOS, so nothing to do here
             result(nil)
+        } else if (call.method == "warmupUrl") {
+           let url = URL(string: urlString),
+            // no need for url warmup on iOS
+            result(url.absoluteString)
+        } else if (call.method == "logout") {
+            // no need for logout cleanup on iOS
+            result(nil)
         } else {
             result(FlutterMethodNotImplemented)
         }
