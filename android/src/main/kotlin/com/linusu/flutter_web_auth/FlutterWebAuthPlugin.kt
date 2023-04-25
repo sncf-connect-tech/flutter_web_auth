@@ -1,10 +1,14 @@
 package com.linusu.flutter_web_auth
 
 import android.app.Activity
+import android.app.Application.ActivityLifecycleCallbacks
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import androidx.annotation.RequiresApi
 import androidx.browser.customtabs.CustomTabsClient
 
 import androidx.browser.customtabs.CustomTabsIntent
@@ -28,6 +32,24 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private var activity: Activity? = null
     private var binaryMessenger: BinaryMessenger? = null
     private var callCount = 0
+    private val lifecycleCallback = object : ActivityLifecycleCallbacks {
+        override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+
+        override fun onActivityStarted(activity: Activity) {}
+
+        @RequiresApi(Build.VERSION_CODES.Q)
+        override fun onActivityResumed(activity: Activity) {
+            cleanupDanglingCalls()
+        }
+
+        override fun onActivityPaused(activity: Activity) {}
+
+        override fun onActivityStopped(activvity: Activity) {}
+
+        override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
+
+        override fun onActivityDestroyed(activity: Activity) {}
+    }
 
     companion object {
         val callbacks = mutableMapOf<String, Result>()
@@ -49,6 +71,7 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         channel = null
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         callCount++
         activity = binding.activity
@@ -68,6 +91,7 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         onDetachedFromActivity()
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         onAttachedToActivity(binding)
     }
@@ -76,6 +100,7 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         activity = null
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onMethodCall(call: MethodCall, resultCallback: Result) {
         val activity = this.activity
         if (activity == null) {
@@ -95,14 +120,15 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 val keepAliveIntent = Intent(context, KeepAliveService::class.java)
                 intent.intent.putExtra("android.support.customtabs.extra.KEEP_ALIVE", keepAliveIntent)
                 intent.launchUrl(activity, url)
+                activity.unregisterActivityLifecycleCallbacks(lifecycleCallback)
+                activity.registerActivityLifecycleCallbacks(lifecycleCallback)
             }
             "authenticate" -> {
                 val url = Uri.parse(call.argument("url"))
                 val callbackUrlScheme = call.argument<String>("callbackUrlScheme")!!
                 val preferEphemeral = call.argument<Boolean>("preferEphemeral")!!
-
-                callbacks[callbackUrlScheme] = resultCallback
                 val intent = CustomTabsIntent.Builder(customTabsSession).build()
+                callbacks[callbackUrlScheme] = resultCallback
                 val keepAliveIntent = Intent(context, KeepAliveService::class.java)
                 if (preferEphemeral) {
                     intent.intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
@@ -110,16 +136,21 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 intent.intent.putExtra("android.support.customtabs.extra.KEEP_ALIVE", keepAliveIntent)
 
                 intent.launchUrl(activity, url)
+                activity.unregisterActivityLifecycleCallbacks(lifecycleCallback)
+                activity.registerActivityLifecycleCallbacks(lifecycleCallback)
             }
-            "cleanUpDanglingCalls" -> {
-                callbacks.forEach { (_, danglingResultCallback) ->
-                    danglingResultCallback.error("CANCELED", "User canceled login", null)
-                }
-                callbacks.clear()
-                resultCallback.success(null)
-            }
-            else -> resultCallback.notImplemented()
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun cleanupDanglingCalls() {
+        println("cleanup dandling calls: start")
+        callbacks.forEach { (_, danglingResultCallback) ->
+            println("cleanup dandling calls: cancelled task")
+            danglingResultCallback.error("CANCELED", "User canceled login", null)
+        }
+        callbacks.clear()
+        activity?.unregisterActivityLifecycleCallbacks(lifecycleCallback)
     }
 }
 

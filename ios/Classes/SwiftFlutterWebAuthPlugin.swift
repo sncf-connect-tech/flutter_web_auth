@@ -86,13 +86,20 @@ public class SwiftFlutterWebAuthPlugin: NSObject, FlutterPlugin {
         } else if (call.method == "cleanUpDanglingCalls") {
             // we do not keep track of old callbacks on iOS, so nothing to do here
             result(nil)
-        } else if (call.method == "warmupUrl") {
-           let url = URL(string: urlString),
+        } else if (call.method == "warmupUrl"),
+             let arguments = call.arguments as? Dictionary<String, AnyObject>,
+             let urlString = arguments["url"] as? String,
+             let url = URL(string: urlString)
+        {
             // no need for url warmup on iOS
             result(url.absoluteString)
-        } else if (call.method == "logout") {
+        } else if (call.method == "logout"),
+             let arguments = call.arguments as? Dictionary<String, AnyObject>,
+             let urlString = arguments["url"] as? String,
+             let url = URL(string: urlString)
+        {
             // no need for logout cleanup on iOS
-            result(nil)
+            result(url.absoluteString)
         } else {
             result(FlutterMethodNotImplemented)
         }
