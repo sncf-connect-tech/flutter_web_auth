@@ -31,7 +31,6 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var customTabsClient: CustomTabsClient
     private var activity: Activity? = null
     private var binaryMessenger: BinaryMessenger? = null
-    private var callCount = 0
     private val lifecycleCallback = object : ActivityLifecycleCallbacks {
         override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
 
@@ -73,7 +72,6 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        callCount++
         activity = binding.activity
         val connection: CustomTabsServiceConnection = object : CustomTabsServiceConnection() {
             override fun onCustomTabsServiceConnected(name: ComponentName, client: CustomTabsClient) {
@@ -144,9 +142,7 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun cleanupDanglingCalls() {
-        println("cleanup dandling calls: start")
         callbacks.forEach { (_, danglingResultCallback) ->
-            println("cleanup dandling calls: cancelled task")
             danglingResultCallback.error("CANCELED", "User canceled login", null)
         }
         callbacks.clear()
