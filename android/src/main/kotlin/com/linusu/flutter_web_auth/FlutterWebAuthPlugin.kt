@@ -1,6 +1,7 @@
 package com.linusu.flutter_web_auth
 
 import android.app.Activity
+import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
 import android.content.ComponentName
 import android.content.Context
@@ -118,8 +119,8 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 val keepAliveIntent = Intent(context, KeepAliveService::class.java)
                 intent.intent.putExtra("android.support.customtabs.extra.KEEP_ALIVE", keepAliveIntent)
                 intent.launchUrl(activity, url)
-                activity.unregisterActivityLifecycleCallbacks(lifecycleCallback)
-                activity.registerActivityLifecycleCallbacks(lifecycleCallback)
+                activity.application.unregisterActivityLifecycleCallbacks(lifecycleCallback)
+                activity.application.registerActivityLifecycleCallbacks(lifecycleCallback)
             }
             "authenticate" -> {
                 val url = Uri.parse(call.argument("url"))
@@ -134,8 +135,8 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 intent.intent.putExtra("android.support.customtabs.extra.KEEP_ALIVE", keepAliveIntent)
 
                 intent.launchUrl(activity, url)
-                activity.unregisterActivityLifecycleCallbacks(lifecycleCallback)
-                activity.registerActivityLifecycleCallbacks(lifecycleCallback)
+                activity.application.unregisterActivityLifecycleCallbacks(lifecycleCallback)
+                activity.application.registerActivityLifecycleCallbacks(lifecycleCallback)
             }
         }
     }
@@ -146,7 +147,7 @@ class FlutterWebAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             danglingResultCallback.error("CANCELED", "User canceled login", null)
         }
         callbacks.clear()
-        activity?.unregisterActivityLifecycleCallbacks(lifecycleCallback)
+        activity?.application?.unregisterActivityLifecycleCallbacks(lifecycleCallback)
     }
 }
 
